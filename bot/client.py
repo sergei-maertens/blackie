@@ -30,16 +30,24 @@ async def on_message(message):
     if match is None:
         return
 
-    post_id = int(match.group("post"))
-    async for msg in message.channel.history(limit=50):
-        if msg.id == post_id:
-            break
+    post = match.group("post")
+    if post == "last":
+        msgs = await message.channel.history(limit=2).flatten()
+        msg = msgs[1]
     else:
-        return
+        post_id = int(post)
+        async for msg in message.channel.history(limit=50):
+            if msg.id == post_id:
+                break
+        else:
+            return
 
-    blocks = parse_codeblocks(msg.content)
+    blocks = parse_codeblocks(msg.content, force_py=True)
     if blocks is None:
-        return
+        # let's just assume it's a code block and try...
+        block = CodeBlock(lang="py", body=msg.content)
+        block.blacken()
+        await message.channel.send(str(block))
 
     formatted_blocks = []
     for block in blocks:
@@ -49,7 +57,7 @@ async def on_message(message):
             formatted_blocks.append(block)
 
     if not formatted_blocks:
-        await message.channel.send("Looks fine to me!")
+        await message.channel.send("Looks fine to me, or you provided gibberish!")
         return
 
     formatted = "\n".join([str(block) for block in formatted_blocks])

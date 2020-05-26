@@ -66,7 +66,7 @@ class CodeBlock(Block):
         return old_body != self.body  # indicate if it was changed
 
 
-def parse_codeblocks(body: str) -> Optional[List[Block]]:
+def parse_codeblocks(body: str, force_py=False) -> Optional[List[Block]]:
     if TOKEN not in body:
         return None
 
@@ -89,6 +89,8 @@ def parse_codeblocks(body: str) -> Optional[List[Block]]:
             if line.startswith(TOKEN):
                 in_codeblock = True
                 language = line[len(TOKEN) :].strip()
+                if not language and force_py:
+                    language = "py"
                 lines = []
 
                 if text_lines:
