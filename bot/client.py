@@ -1,4 +1,5 @@
 import logging
+import re
 
 import discord
 
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 client = discord.Client()
 
-SIZE_CUTOFF = 100
+FORMAT_REGEX = re.compile(r"format (?P<post>\w+)")
 
 
 @client.event
@@ -21,22 +22,36 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # don't bother with short messages
-    if len(message.content) < SIZE_CUTOFF:
+    # only act on mentions
+    if client.user not in message.mentions:
         return
 
-    blocks = parse_codeblocks(message.content)
-    if blocks is None:  # nothing to do
+    match = FORMAT_REGEX.search(message.content)
+    if match is None:
         return
 
+    post_id = int(match.group("post"))
+    async for msg in message.channel.history(limit=50):
+        if msg.id == post_id:
+            break
+    else:
+        return
+
+    blocks = parse_codeblocks(msg.content)
+    if blocks is None:
+        return
+
+    formatted_blocks = []
     for block in blocks:
-        block.blacken()
+        if not isinstance(block, CodeBlock):
+            continue
+        if block.blacken():
+            formatted_blocks.append(block)
 
-    formatted = "\n".join(
-        [str(block) for block in blocks if isinstance(block, CodeBlock)]
-    )
-    if formatted == message.content:  # nothing to do, already formatted properly
+    if not formatted_blocks:
+        await message.channel.send("Looks fine to me!")
         return
 
+    formatted = "\n".join([str(block) for block in formatted_blocks])
     content = "Here, i've blackened the code:\n{}".format(formatted)
     await message.channel.send(content)

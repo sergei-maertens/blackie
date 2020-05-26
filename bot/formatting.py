@@ -32,7 +32,7 @@ class CodeBlock(Block):
     __slots__ = ("lang", "body")
 
     def __init__(self, lang: str, body: str):
-        self.lang = lang
+        self.lang = lang.strip()
         self.body = body
 
     def __repr__(self):
@@ -46,7 +46,7 @@ class CodeBlock(Block):
         )
         return body
 
-    def blacken(self):
+    def blacken(self) -> bool:
         if self.lang and self.lang.lower() not in PY_LANGS:
             return
 
@@ -54,12 +54,16 @@ class CodeBlock(Block):
         if not self.lang:
             return
 
-        # at this point - yes, it's python
+        # at this point - yes, it's probably python
+        old_body = self.body
         try:
             reformatted = format_str(self.body, mode=MODE)
             self.body = reformatted.strip()
         except Exception:
             logger.exception("Formatting failed")
+            return False
+
+        return old_body != self.body  # indicate if it was changed
 
 
 def parse_codeblocks(body: str) -> Optional[List[Block]]:
