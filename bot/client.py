@@ -35,6 +35,11 @@ async def on_message(message):
         msgs = await message.channel.history(limit=2).flatten()
         msg = msgs[1]
     else:
+        if not post.isnumeric():
+            logger.info("%s is not a number!", post)
+
+            return
+            
         post_id = int(post)
         async for msg in message.channel.history(limit=50):
             if msg.id == post_id:
