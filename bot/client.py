@@ -36,7 +36,8 @@ async def on_message(message):
         msg = msgs[1]
     else:
         if not post.isnumeric():
-            logger.info(f"{post} is not a number!")
+            logger.info("%s is not a number!", post)
+
             return
             
         post_id = int(post)
